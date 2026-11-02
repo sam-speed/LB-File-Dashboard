@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LB File Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --bg-card: #151d30;
+            --bg-card-hover: #1c2742;
+            --bg-input: #1e293b;
+            --purple-accent: #a855f7;
+            --purple-hover: #9333ea;
+            --purple-glow: rgba(168, 85, 247, 0.35);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --danger-color: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.8rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header h1 {
+            font-size: 2.1rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 span {
+            color: var(--purple-accent);
+            text-shadow: 0 0 20px var(--purple-glow);
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--purple-accent), var(--purple-hover));
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px var(--purple-glow);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--purple-accent);
+            color: var(--purple-accent);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(168, 85, 247, 0.15);
+            color: #fff;
+        }
+
+        .scan-progress-container {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--purple-accent);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.8rem;
+            box-shadow: 0 0 20px var(--purple-glow);
+        }
+
+        .scan-status-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: var(--bg-input);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            border-radius: 5px;
+            transition: width 0.2s ease;
+        }
+
+        .saved-paths-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .path-list {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .path-chip {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .path-chip:hover {
+            border-color: var(--purple-accent);
+            background: var(--bg-card-hover);
+        }
+
+        .path-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .path-action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .path-action-btn:hover { opacity: 1; }
+
+        .grid-kpi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.3rem;
+        }
+
+        .kpi-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .kpi-value.purple {
+            color: var(--purple-accent);
+            text-shadow: 0 0 15px var(--purple-glow);
+        }
+
+        .grid-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.8rem;
+        }
+
+        @media (max-width: 992px) {
+            .grid-charts { grid-template-columns: 1fr; }
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.5rem;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-container {
+            flex: 1;
+            position: relative;
+            margin-top: 1rem;
+            min-height: 280px;
+        }
+
+        .calc-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .calc-grid { grid-template-columns: 1fr; }
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+        }
+
+        .slider-header span.val {
+            color: var(--purple-accent);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: var(--bg-input);
+            outline: none;
+            accent-color: var(--purple-accent);
+            cursor: pointer;
+        }
+
+        .calc-result-box {
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid var(--purple-accent);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+        }
+
+        .calc-result-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .calc-result-val {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--purple-accent);
+            margin: 6px 0;
+            text-shadow: 0 0 15px var(--purple-glow);
+        }
+
+        .background-status {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #22c55e;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>📁 LB File <span>Dashboard</span></h1>
+        <div class="actions">
+            <button class="btn btn-outline" id="reloadBtn">🔄 Ricarica</button>
+            <button class="btn" id="scanBtn">📂 Nuova Cartella</button>
+            <input type="file" id="fallbackInput" webkitdirectory directory style="display: none;">
+        </div>
+    </div>
+
+    <!-- Barra di avanzamento scansione -->
+    <div class="scan-progress-container" id="scanProgressBox">
+        <div class="scan-status-text">
+            <span id="scanStatusTitle">🔍 Scansione in corso...</span>
+            <span id="scanStatusPercent">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;" id="scanDetailText">Inizializzazione...</div>
+    </div>
+
+    <!-- Percorsi Salvati -->
+    <div class="saved-paths-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="kpi-title" style="margin: 0;">Cartelle Salvate in Memoria</div>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Usa "Nuova Cartella" per aggiungere una nuova cartella con permessi persistenti</span>
+        </div>
+        <div class="path-list" id="pathList"></div>
+    </div>
+
+    <!-- KPI Totali -->
+    <div class="grid-kpi">
+        <div class="kpi-card">
+            <div class="kpi-title">Dimensione Totale</div>
+            <div class="kpi-value purple" id="kpiTotalSize">0 GB</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);" id="kpiTotalExact">0 Bytes</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">Sottocartelle Dirette</div>
+            <div class="kpi-value" id="kpiFolderCount">0</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Cartelle 1° livello</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">Cartella Più Grande</div>
+            <div class="kpi-value" style="font-size: 1.3rem;" id="kpiMaxFolder">-</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);" id="kpiMaxFolderSize">0 GB</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">Crescita Media Mensile</div>
+            <div class="kpi-value" id="kpiGrowthRate">+2.4%</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Stima archivio</div>
+        </div>
+    </div>
+
+    <!-- Sezione Grafici -->
+    <div class="grid-charts">
+        <div class="chart-card">
+            <div class="kpi-title">🥧 Distribuzione Spazio per Anno</div>
+            <div class="chart-container">
+                <canvas id="yearsPieChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="kpi-title">🍕 Top 20 Elementi Più Grandi</div>
+            <div class="chart-container">
+                <canvas id="top20PieChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calcolatore di Proiezione con Slider -->
+    <div class="calc-card">
+        <div class="kpi-title">🚀 Proiezione Dimensione Futura</div>
+        <div class="calc-grid">
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span>Seleziona Anno Target:</span>
+                    <span class="val" id="yearSliderVal">2028</span>
+                </div>
+                <input type="range" id="targetYearSlider" min="2026" max="2050" value="2028" step="1">
+
+                <div class="slider-header" style="margin-top: 10px;">
+                    <span>Tasso Crescita Mensile (%):</span>
+                    <span class="val" id="growthSliderVal">2.4%</span>
+                </div>
+                <input type="range" id="growthRateSlider" min="0.5" max="10.0" value="2.4" step="0.1">
+            </div>
+
+            <div class="calc-result-box">
+                <div class="calc-result-title">Dimensione Stimata nel <span id="lblTargetYear">2028</span></div>
+                <div class="calc-result-val" id="projectedSize">0 GB</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);" id="projectedDiff">+0 GB di aumento</div>
+            </div>
+        </div>
+        <div class="background-status">
+            <div class="status-dot"></div>
+            <span id="bgStatusText">Monitoraggio attivo in background (ogni 2 min)</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    let yearsChartInstance = null;
+    let top20ChartInstance = null;
+    let currentFolders = [];
+    let totalBytesGlobal = 0;
+    let activeDirHandle = null;
+
+    // Database IndexedDB per mantenere gli accessi alle cartelle
+    let db = null;
+
+    function initDB() {
+        return new Promise((resolve) => {
+            const req = indexedDB.open('LB_FileDashboard_DB', 1);
+            req.onupgradeneeded = (e) => {
+                db = e.target.result;
+                if (!db.objectStoreNames.contains('handles')) {
+                    db.createObjectStore('handles', { keyPath: 'id' });
+                }
+            };
+            req.onsuccess = (e) => {
+                db = e.target.result;
+                resolve();
+            };
+            req.onerror = () => resolve();
+        });
+    }
+
+    async function saveDirectoryHandle(handle) {
+        if (!db) await initDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction('handles', 'readwrite');
+            const store = tx.objectStore('handles');
+            store.put({ id: handle.name, handle: handle });
+            tx.oncomplete = () => resolve();
+        });
+    }
+
+    async function getSavedHandles() {
+        if (!db) await initDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction('handles', 'readonly');
+            const store = tx.objectStore('handles');
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+        });
+    }
+
+    async function deleteSavedHandle(id) {
+        if (!db) await initDB();
+        return new Promise((resolve) => {
+            const tx = db.transaction('handles', 'readwrite');
+            const store = tx.objectStore('handles');
+            store.delete(id);
+            tx.oncomplete = () => resolve();
+        });
+    }
+
+    async function init() {
+        await initDB();
+        renderSavedPaths();
+        setupEventListeners();
+        startBackgroundMonitor();
+    }
+
+    function setupEventListeners() {
+        document.getElementById('reloadBtn').addEventListener('click', async () => {
+            if (activeDirHandle) {
+                await handleNativePicker(activeDirHandle);
+            } else {
+                triggerFolderScan();
+            }
+        });
+
+        document.getElementById('scanBtn').addEventListener('click', triggerFolderScan);
+        document.getElementById('fallbackInput').addEventListener('change', handleFallbackSelect);
+
+        const yearSlider = document.getElementById('targetYearSlider');
+        const growthSlider = document.getElementById('growthRateSlider');
+
+        yearSlider.addEventListener('input', (e) => {
+            document.getElementById('yearSliderVal').innerText = e.target.value;
+            calculateProjection();
+        });
+
+        growthSlider.addEventListener('input', (e) => {
+            document.getElementById('growthSliderVal').innerText = `${e.target.value}%`;
+            calculateProjection();
+        });
+    }
+
+    function startBackgroundMonitor() {
+        setInterval(async () => {
+            const now = new Date().toLocaleTimeString();
+            if (activeDirHandle) {
+                try {
+                    const opts = { mode: 'read' };
+                    if ((await activeDirHandle.queryPermission(opts)) === 'granted') {
+                        document.getElementById('bgStatusText').innerText = `Ultimo controllo background: ${now} (Sincronizzato)`;
+                        return;
+                    }
+                } catch(e) {}
+            }
+            document.getElementById('bgStatusText').innerText = `Controllo background effettuato alle ${now}`;
+        }, 120000);
+    }
+
+    function formatSmartSize(bytes) {
+        if (bytes === 0) return '0 GB';
+        const gb = bytes / Math.pow(1024, 3);
+        if (gb >= 1024) {
+            return `${(gb / 1024).toFixed(3)} TB`;
+        }
+        return `${gb.toFixed(1)} GB`;
+    }
+
+    function showProgress(show, title = 'Scansione...', percent = 0, detail = '') {
+        const box = document.getElementById('scanProgressBox');
+        if (show) {
+            box.style.display = 'block';
+            document.getElementById('scanStatusTitle').innerText = title;
+            document.getElementById('scanStatusPercent').innerText = `${percent}%`;
+            document.getElementById('progressBarFill').style.width = `${percent}%`;
+            document.getElementById('scanDetailText').innerText = detail;
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    function triggerFolderScan() {
+        if ('showDirectoryPicker' in window) {
+            window.showDirectoryPicker()
+                .then(async (handle) => {
+                    await saveDirectoryHandle(handle);
+                    await renderSavedPaths();
+                    await handleNativePicker(handle);
+                })
+                .catch(err => {
+                    if (err.name !== 'AbortError') document.getElementById('fallbackInput').click();
+                });
+        } else {
+            document.getElementById('fallbackInput').click();
+        }
+    }
+
+    async function handleNativePicker(dirHandle) {
+        // Richiedi il permesso di lettura se non è presente
+        const options = { mode: 'read' };
+        if ((await dirHandle.queryPermission(options)) !== 'granted') {
+            if ((await dirHandle.requestPermission(options)) !== 'granted') {
+                alert('Permesso negato per la cartella.');
+                return;
+            }
+        }
+
+        activeDirHandle = dirHandle;
+        showProgress(true, 'Scansione cartella in corso...', 5, 'Conteggio sottocartelle...');
+        currentFolders = [];
+        totalBytesGlobal = 0;
+
+        const subEntries = [];
+        for await (const entry of dirHandle.values()) {
+            if (entry.kind === 'directory') subEntries.push(entry);
+        }
+
+        const total = subEntries.length;
+        for (let i = 0; i < total; i++) {
+            const entry = subEntries[i];
+            const pct = Math.round(((i + 1) / total) * 100);
+            showProgress(true, 'Calcolo dimensioni in corso...', pct, `Cartella ${i+1} di ${total}: ${entry.name}`);
+            
+            const size = await getDirectorySize(entry);
+            const year = parseYearFromName(entry.name);
+            currentFolders.push({ name: entry.name, size: size, year: year });
+            totalBytesGlobal += size;
+        }
+
+        showProgress(false);
+        updateDashboard();
+    }
+
+    async function getDirectorySize(dirHandle) {
+        let total = 0;
+        try {
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file') {
+                    const f = await entry.getFile();
+                    total += f.size;
+                } else if (entry.kind === 'directory') {
+                    total += await getDirectorySize(entry);
+                }
+            }
+        } catch(e) {}
+        return total;
+    }
+
+    function handleFallbackSelect(e) {
+        const files = e.target.files;
+        if (!files.length) return;
+
+        showProgress(true, 'Analisi file in corso...', 20, 'Aggregazione sottocartelle...');
+        const folderSizes = {};
+
+        for (let i = 0; i < files.length; i++) {
+            const parts = files[i].webkitRelativePath.split('/');
+            if (parts.length > 1) {
+                const top = parts[1];
+                folderSizes[top] = (folderSizes[top] || 0) + files[i].size;
+            }
+        }
+
+        currentFolders = [];
+        totalBytesGlobal = 0;
+        Object.keys(folderSizes).forEach(name => {
+            const size = folderSizes[name];
+            const year = parseYearFromName(name);
+            currentFolders.push({ name, size, year });
+            totalBytesGlobal += size;
+        });
+
+        showProgress(false);
+        updateDashboard();
+    }
+
+    function parseYearFromName(name) {
+        const match = name.match(/^(\d{4})/);
+        return match ? match[1] : 'Altro';
+    }
+
+    function updateDashboard() {
+        document.getElementById('kpiTotalSize').innerText = formatSmartSize(totalBytesGlobal);
+        document.getElementById('kpiTotalExact').innerText = `${totalBytesGlobal.toLocaleString()} Bytes`;
+        document.getElementById('kpiFolderCount').innerText = currentFolders.length;
+
+        if (currentFolders.length > 0) {
+            const maxF = [...currentFolders].sort((a, b) => b.size - a.size)[0];
+            document.getElementById('kpiMaxFolder').innerText = maxF.name;
+            document.getElementById('kpiMaxFolderSize').innerText = formatSmartSize(maxF.size);
+        } else {
+            document.getElementById('kpiMaxFolder').innerText = '-';
+            document.getElementById('kpiMaxFolderSize').innerText = '0 GB';
+        }
+
+        renderYearsPieChart();
+        renderTop20PieChart();
+        calculateProjection();
+    }
+
+    const chartColors = [
+        '#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b',
+        '#8b5cf6', '#6366f1', '#14b8a6', '#84cc16', '#ef4444',
+        '#d946ef', '#06b6d4', '#22c55e', '#eab308', '#f97316'
+    ];
+
+    function renderYearsPieChart() {
+        const ctx = document.getElementById('yearsPieChart').getContext('2d');
+        
+        const yearMap = {};
+        currentFolders.forEach(f => {
+            yearMap[f.year] = (yearMap[f.year] || 0) + f.size;
+        });
+
+        const labels = Object.keys(yearMap).sort();
+        const data = labels.map(y => (yearMap[y] / Math.pow(1024, 3)).toFixed(2));
+
+        if (yearsChartInstance) yearsChartInstance.destroy();
+
+        yearsChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: chartColors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: '#151d30'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.raw} GB`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderTop20PieChart() {
+        const ctx = document.getElementById('top20PieChart').getContext('2d');
+        
+        const sorted = [...currentFolders].sort((a, b) => b.size - a.size).slice(0, 20);
+        const labels = sorted.map(f => f.name);
+        const data = sorted.map(f => (f.size / Math.pow(1024, 3)).toFixed(2));
+
+        if (top20ChartInstance) top20ChartInstance.destroy();
+
+        top20ChartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: chartColors,
+                    borderWidth: 2,
+                    borderColor: '#151d30'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.raw} GB`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function calculateProjection() {
+        const targetYear = parseInt(document.getElementById('targetYearSlider').value) || 2028;
+        const growthRate = parseFloat(document.getElementById('growthRateSlider').value) || 2.4;
+        
+        document.getElementById('lblTargetYear').innerText = targetYear;
+
+        const currentYear = 2026;
+        const monthsDiff = Math.max(0, (targetYear - currentYear) * 12);
+
+        const initialBytes = totalBytesGlobal;
+        const futureBytes = initialBytes * Math.pow(1 + (growthRate / 100), monthsDiff);
+        const diffBytes = futureBytes - initialBytes;
+
+        document.getElementById('projectedSize').innerText = formatSmartSize(futureBytes);
+        document.getElementById('projectedDiff').innerText = `+${formatSmartSize(diffBytes)} di aumento stimato`;
+    }
+
+    async function renderSavedPaths() {
+        const container = document.getElementById('pathList');
+        container.innerHTML = '';
+        
+        const savedRecords = await getSavedHandles();
+        
+        if (savedRecords.length === 0) {
+            container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">Nessuna cartella salvata. Clicca su "Nuova Cartella" per aprirne una.</span>';
+            return;
+        }
+
+        savedRecords.forEach((item) => {
+            const chip = document.createElement('div');
+            chip.className = 'path-chip';
+            chip.innerHTML = `
+                <span style="display:flex; align-items:center; gap:8px;">📌 <b>${item.id}</b></span>
+                <div class="path-actions">
+                    <button class="path-action-btn" title="Rimuovi" onclick="event.stopPropagation(); removeHandle('${item.id}')">🗑️</button>
+                </div>
+            `;
+            chip.onclick = () => handleNativePicker(item.handle);
+            container.appendChild(chip);
+        });
+    }
+
+    async function removeHandle(id) {
+        if (confirm(`Rimuovere la cartella "${id}" dalla memoria?`)) {
+            await deleteSavedHandle(id);
+            await renderSavedPaths();
+        }
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
